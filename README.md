@@ -1,4 +1,4 @@
-# Creator.AI 🚀
+# Creator.AI 
 
 > An advanced and feature-rich web-based AI assistant built with HTML, Tailwind CSS, and vanilla JavaScript, designed specifically for content creators, copywriters, and designers.
 
@@ -27,6 +27,4 @@ Local Persistence: Manages daily usage limits and preferences securely via brows
 
 To run this project locally, simply follow these steps:
 
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/your-username/Creator.AI.git](https://github.com/your-username/Creator.AI.git)
+1. Clone the repository: git clone [https://github.com/your-username/Creator.AI.git](https://github.com/your-username/Creator.AI.git)
