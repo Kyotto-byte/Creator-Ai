@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator.AI — ИИ-ассистент для контента</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { boxShadow: {
+                'neon': '0 0 25px rgba(56, 189, 163, 0.35)',
+                'neon-subtle': '0 0 15px rgba(120, 169, 255, 0.25)'
+            } } }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+    <style>
+        :root { --page-bg: #070b16; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--page-bg); color: #f8fafc; overflow-x: hidden; }
+        .glass-panel { background: rgba(15, 23, 42, 0.58); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(255, 255, 255, 0.11); }
+        .glass-input { background: rgba(8, 14, 28, 0.82); border: 1px solid rgba(255, 255, 255, 0.12); }
+        .glass-input:focus { border-color: rgba(56, 189, 163, 0.85); box-shadow: 0 0 16px rgba(56, 189, 163, 0.28); outline: none; }
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: var(--page-bg); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .bg-mesh {
+            position: fixed; inset: 0; z-index: -1; overflow: hidden;
+            background: linear-gradient(-45deg, #070b16, #111d38, #1c1638, #0d2633, #241432);
+            background-size: 400% 400%;
+            animation: gradientFlow 16s ease infinite;
+        }
+        .orb { position: absolute; border-radius: 9999px; filter: blur(85px); opacity: 0.55; mix-blend-mode: screen; will-change: transform; }
+        .orb-1 { width: 52vw; height: 52vw; top: -12%; left: -10%; background: radial-gradient(circle, rgba(56, 189, 163, 0.65) 0%, transparent 70%); animation: floatOrb1 14s ease-in-out infinite alternate; }
+        .orb-2 { width: 48vw; height: 48vw; top: 10%; right: -12%; background: radial-gradient(circle, rgba(120, 169, 255, 0.6) 0%, transparent 70%); animation: floatOrb2 18s ease-in-out infinite alternate; }
+        .orb-3 { width: 50vw; height: 50vw; bottom: -15%; left: 22%; background: radial-gradient(circle, rgba(240, 166, 189, 0.52) 0%, transparent 70%); animation: floatOrb3 15s ease-in-out infinite alternate; }
+        .orb-4 { width: 38vw; height: 38vw; bottom: 12%; right: 15%; background: radial-gradient(circle, rgba(168, 85, 247, 0.5) 0%, transparent 70%); animation: floatOrb1 20s ease-in-out infinite alternate-reverse; }
+
+        @keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes floatOrb1 { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(8vw, 6vh) scale(1.12); } 100% { transform: translate(3vw, 12vh) scale(0.95); } }
+        @keyframes floatOrb2 { 0% { transform: translate(0, 0) scale(1.05); } 50% { transform: translate(-9vw, 8vh) scale(0.92); } 100% { transform: translate(-4vw, -5vh) scale(1.1); } }
+        @keyframes floatOrb3 { 0% { transform: translate(0, 0) scale(0.96); } 50% { transform: translate(7vw, -9vh) scale(1.14); } 100% { transform: translate(-6vw, -4vh) scale(1); } }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-up { animation: fadeUp .32s ease-out both; }
+
+        #generateBtn, #settingsModal button[type="submit"] {
+            background-image: linear-gradient(100deg, #38bda3 0%, #78a9ff 58%, #f0a6bd 100%);
+            box-shadow: 0 10px 28px rgba(88, 170, 200, 0.28);
+        }
+        #generateBtn:hover, #settingsModal button[type="submit"]:hover {
+            box-shadow: 0 12px 34px rgba(240, 166, 189, 0.36);
+        }
+        button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 2px solid #78a9ff; outline-offset: 2px;
+        }
+        ::selection { background: rgba(120, 169, 255, 0.55); color: #fff; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <div class="bg-mesh" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="w-full border-b border-white/10 sticky top-0 z-40 glass-panel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 via-indigo-500 to-pink-400 flex items-center justify-center shadow-neon">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                </div>
+                <span class="text-xl font-bold bg-gradient-to-r from-white via-cyan-200 to-purple-300 bg-clip-text text-transparent">Creator.AI</span>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <div class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-900/70 border border-cyan-500/30 text-cyan-100 text-xs font-medium">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400"></i>
+                    <span><span class="hidden sm:inline">Кредиты: </span><strong id="creditsCount">15</strong></span>
+                </div>
+                <button id="historyBtn" type="button" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-all hover:border-cyan-400/40 cursor-pointer">
+                    <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i>
+                    <span class="hidden sm:inline">История</span>
+                    <span id="historyBadge" class="w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-200 flex items-center justify-center text-[10px] font-bold">0</span>
+                </button>
+                <button id="settingsBtn" type="button" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 hover:text-white text-xs font-medium transition-all hover:border-cyan-400/40 cursor-pointer">
+                    <i data-lucide="settings" class="w-4 h-4 text-cyan-400"></i>
+                    <span class="hidden sm:inline">Настройки</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative z-10">
+        <div class="mb-6 space-y-1">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-sm">
+                Контент для блога, маркетинга и дизайна <span class="bg-gradient-to-r from-teal-300 via-sky-300 to-pink-300 bg-clip-text text-transparent">из одной темы</span>
+            </h1>
+            <p class="text-slate-300 text-sm">Опишите тему, выберите тональность и платформу — получите сценарий по точному смыслу, пост, офферы и визуал.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-6 items-start">
+            <aside class="glass-panel rounded-2xl p-5 sm:p-6 lg:sticky lg:top-24 shadow-2xl">
+                <form id="generatorForm" class="space-y-5">
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label for="promptInput" class="text-sm font-semibold text-slate-200">Тема или идея</label>
+                            <button type="button" id="exampleBtn" class="text-xs text-cyan-300 hover:text-white flex items-center space-x-1 cursor-pointer transition-colors">
+                                <i data-lucide="wand-2" class="w-3 h-3"></i><span>Пример</span>
+                            </button>
+                        </div>
+                        <textarea id="promptInput" rows="4" required maxlength="500"
+                            class="w-full glass-input rounded-xl p-3.5 text-white placeholder-slate-400 transition-all text-sm resize-none"
+                            placeholder="Например: Как выучить Python с нуля за 3 месяца без выгорания"></textarea>
+                        <div class="flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Умный анализ темы без ложных срабатываний</span>
+                            <span id="charCount">0 / 500</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <span class="block text-sm font-semibold text-slate-200">Тональность</span>
+                        <div id="toneGroup" class="flex flex-wrap gap-2" role="group"></div>
+                        <p id="toneHint" class="text-[11px] text-slate-300 leading-relaxed"></p>
+                    </div>
+
+                    <div class="space-y-2">
+                        <span class="block text-sm font-semibold text-slate-200">Платформа</span>
+                        <div id="platformGroup" class="grid grid-cols-2 gap-2" role="group">
+                            <button type="button" data-platform="Instagram" class="platform-btn px-3 py-2.5 rounded-xl text-xs font-medium border transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="camera" class="w-3.5 h-3.5 text-pink-400"></i><span>Instagram Reels</span>
+                            </button>
+                            <button type="button" data-platform="TikTok" class="platform-btn px-3 py-2.5 rounded-xl text-xs font-medium border transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="video" class="w-3.5 h-3.5 text-cyan-400"></i><span>TikTok</span>
+                            </button>
+                            <button type="button" data-platform="YouTube" class="platform-btn px-3 py-2.5 rounded-xl text-xs font-medium border transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="play-circle" class="w-3.5 h-3.5 text-red-400"></i><span>YouTube</span>
+                            </button>
+                            <button type="button" data-platform="Telegram" class="platform-btn px-3 py-2.5 rounded-xl text-xs font-medium border transition-all flex items-center justify-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="send" class="w-3.5 h-3.5 text-blue-400"></i><span>Telegram</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="promptTemplates" class="flex flex-wrap gap-2 pt-1">
+                        <button type="button" data-template="Python с нуля" class="px-2.5 py-1.5 rounded-lg border border-cyan-400/20 bg-cyan-400/10 text-cyan-200 text-[11px] hover:bg-cyan-400/20 transition-all cursor-pointer">Python с нуля</button>
+                        <button type="button" data-template="Борьба со стрессом" class="px-2.5 py-1.5 rounded-lg border border-pink-400/20 bg-pink-400/10 text-pink-200 text-[11px] hover:bg-pink-400/20 transition-all cursor-pointer">Борьба со стрессом</button>
+                        <button type="button" data-template="Запуск стартапа" class="px-2.5 py-1.5 rounded-lg border border-amber-400/20 bg-amber-400/10 text-amber-200 text-[11px] hover:bg-amber-400/20 transition-all cursor-pointer">Запуск стартапа</button>
+                        <button type="button" data-template="Кейс роста продаж" class="px-2.5 py-1.5 rounded-lg border border-emerald-400/20 bg-emerald-400/10 text-emerald-200 text-[11px] hover:bg-emerald-400/20 transition-all cursor-pointer">Кейс роста</button>
+                    </div>
+
+                    <button type="submit" id="generateBtn"
+                        class="w-full py-3.5 rounded-xl text-slate-950 font-bold transition-all duration-300 flex items-center justify-center space-x-2 group disabled:opacity-60 disabled:cursor-wait cursor-pointer">
+                        <i data-lucide="sparkles" class="w-5 h-5 group-hover:rotate-12 transition-transform"></i>
+                        <span id="btnText">Сгенерировать</span>
+                        <span class="text-[10px] font-semibold text-slate-900/75 hidden sm:inline">Ctrl + Enter</span>
+                    </button>
+
+                    <div class="pt-3 border-t border-white/10 space-y-1.5">
+                        <button type="button" id="modelInfo" class="w-full flex items-center justify-between text-xs text-slate-300 hover:text-white transition-colors cursor-pointer">
+                            <span class="flex items-center space-x-2"><i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i><span>Режим: <strong id="modelLabel" class="text-white">Демо</strong></span></span>
+                            <span class="text-cyan-300 hover:underline">Изменить</span>
+                        </button>
+                        <p id="modeHint" class="text-[11px] leading-relaxed text-slate-400"></p>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- RIGHT: results -->
+            <section id="resultsSection" class="space-y-4 min-w-0 scroll-mt-24">
+                <div class="flex flex-wrap items-end justify-between gap-3 border-b border-white/10 pb-2">
+                    <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto pb-px" role="tablist">
+                        <button role="tab" data-tab="blogger" id="tab-blogger" aria-selected="true" class="tab-btn px-4 py-3 rounded-t-xl font-medium text-sm flex items-center space-x-2 border-b-2 whitespace-nowrap transition-all cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-cyan-400/15 border border-cyan-300/20 flex items-center justify-center"><i data-lucide="clapperboard" class="w-4 h-4 text-cyan-300"></i></span><span>Блогер</span>
+                        </button>
+                        <button role="tab" data-tab="marketer" id="tab-marketer" aria-selected="false" class="tab-btn px-4 py-3 rounded-t-xl font-medium text-sm flex items-center space-x-2 border-b-2 whitespace-nowrap transition-all cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-violet-400/15 border border-violet-300/20 flex items-center justify-center"><i data-lucide="megaphone" class="w-4 h-4 text-violet-300"></i></span><span>Маркетолог</span>
+                        </button>
+                        <button role="tab" data-tab="designer" id="tab-designer" aria-selected="false" class="tab-btn px-4 py-3 rounded-t-xl font-medium text-sm flex items-center space-x-2 border-b-2 whitespace-nowrap transition-all cursor-pointer">
+                            <span class="w-7 h-7 rounded-lg bg-pink-400/15 border border-pink-300/20 flex items-center justify-center"><i data-lucide="palette" class="w-4 h-4 text-pink-300"></i></span><span>Дизайнер</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center space-x-2 pb-2">
+                        <button type="button" id="copyAllBtn" disabled class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-white/10 text-slate-300 hover:text-white text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1.5 transition-all cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i><span class="hidden sm:inline">Копировать всё</span>
+                        </button>
+                        <button type="button" data-export="txt" disabled class="export-btn px-3 py-1.5 rounded-lg bg-slate-900/60 border border-white/10 text-slate-300 hover:text-white text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1.5 transition-all cursor-pointer">
+                            <i data-lucide="file-text" class="w-3.5 h-3.5"></i><span>TXT</span>
+                        </button>
+                        <button type="button" data-export="json" disabled class="export-btn px-3 py-1.5 rounded-lg bg-slate-900/60 border border-white/10 text-slate-300 hover:text-white text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1.5 transition-all cursor-pointer">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i><span>JSON</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="analysisBar" class="hidden flex flex-wrap items-center gap-2 text-[11px]"></div>
+
+                <div class="relative min-h-[420px]">
+                    <div id="loadingOverlay" class="absolute inset-0 bg-[#070b16]/80 backdrop-blur-md rounded-2xl z-20 flex flex-col items-center justify-center space-y-4 hidden" aria-live="polite">
+                        <div class="w-14 h-14 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin shadow-neon"></div>
+                        <div class="text-center space-y-1">
+                            <p id="loaderStatusText" class="text-cyan-300 font-semibold text-sm animate-pulse">Умный анализ темы...</p>
+                            <p class="text-xs text-slate-300">Подбираю контекстные варианты для ролей</p>
+                        </div>
+                    </div>
+
+                    <!-- Blogger -->
+                    <div id="content-blogger" role="tabpanel" class="tab-content space-y-4">
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 shadow-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-200 text-xs font-semibold flex items-center space-x-1 border border-purple-500/30">
+                                    <i data-lucide="zap" class="w-3 h-3"></i><span id="hook-label">Хук (0:00 – 0:03)</span>
+                                </span>
+                                <div class="flex items-center space-x-1.5">
+                                    <button type="button" data-copy="blog-hook" class="text-slate-300 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Копировать хук"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button type="button" data-regenerate="hook" class="text-slate-300 hover:text-cyan-300 transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Другой вариант хука"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                            <p id="blog-hook" class="text-slate-100 text-base leading-relaxed">Опишите тему слева и нажмите «Сгенерировать» — здесь появится вовлекающий хук.</p>
+                            <div class="mt-4 pt-3 border-t border-white/10 text-xs text-cyan-300 font-medium flex items-center justify-between">
+                                <span>Психотриггер: <span id="blog-trigger">—</span></span>
+                                <span class="text-slate-400" id="time-hook">0:00 – 0:03</span>
+                            </div>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 shadow-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-200 text-xs font-semibold flex items-center space-x-1 border border-indigo-500/30">
+                                    <i data-lucide="list-tree" class="w-3 h-3"></i><span>Структура видео (Таймлайны)</span>
+                                </span>
+                                <div class="flex items-center space-x-1.5">
+                                    <button type="button" data-copy="blog-script-container" class="text-slate-300 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Копировать сценарий"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button type="button" data-regenerate="script" class="text-slate-300 hover:text-cyan-300 transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Другой вариант сценария"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                            <div id="blog-script-container" class="space-y-3 text-sm text-slate-300">
+                                <div class="bg-slate-900/60 p-3.5 rounded-xl border border-white/10">
+                                    <strong class="text-cyan-300 block mb-1">Проблема (<span id="time-1">0:03 – 0:15</span>):</strong>
+                                    <p id="blog-body-1" class="leading-relaxed">Описание боли или задачи по вашей теме.</p>
+                                </div>
+                                <div class="bg-slate-900/60 p-3.5 rounded-xl border border-white/10">
+                                    <strong class="text-cyan-300 block mb-1">Решение (<span id="time-2">0:15 – 0:45</span>):</strong>
+                                    <p id="blog-body-2" class="leading-relaxed">Практическое пошаговое руководство.</p>
+                                </div>
+                                <div class="bg-slate-900/60 p-3.5 rounded-xl border border-white/10">
+                                    <strong class="text-cyan-300 block mb-1">Призыв к действию (<span id="time-3">0:45 – 0:55</span>):</strong>
+                                    <p id="blog-body-3" class="leading-relaxed">Итоговый призыв.</p>
+                                </div>
+                                <div class="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-white/10">
+                                    <span class="text-xs text-slate-400 flex items-center space-x-1"><i data-lucide="hash" class="w-3 h-3 text-cyan-400"></i><span>Хэштеги:</span></span>
+                                    <span class="text-xs font-mono text-cyan-300 break-words" id="blog-hashtags">#creatorai</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marketer -->
+                    <div id="content-marketer" role="tabpanel" class="tab-content hidden space-y-4">
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 shadow-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-md bg-blue-500/20 text-blue-200 text-xs font-semibold flex items-center space-x-1 border border-blue-500/30">
+                                    <i data-lucide="send" class="w-3 h-3"></i><span>Пост для соцсетей</span>
+                                </span>
+                                <div class="flex items-center space-x-1.5">
+                                    <span id="post-count" class="text-[10px] text-slate-400 mr-1"></span>
+                                    <button type="button" data-copy="market-post" class="text-slate-300 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Копировать пост"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button type="button" data-regenerate="post" class="text-slate-300 hover:text-cyan-300 transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Другой вариант поста"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                            <div id="market-post" class="text-sm text-slate-200 leading-relaxed bg-slate-900/60 p-4 rounded-xl border border-white/10 whitespace-pre-line">Готовый пост появится здесь.</div>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 shadow-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-200 text-xs font-semibold flex items-center space-x-1 border border-emerald-500/30">
+                                    <i data-lucide="tag" class="w-3 h-3"></i><span>Ключевые тезисы и офферы</span>
+                                </span>
+                                <div class="flex items-center space-x-1.5">
+                                    <button type="button" data-copy="market-offers" class="text-slate-300 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Копировать тезисы"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                    <button type="button" data-regenerate="offers" class="text-slate-300 hover:text-cyan-300 transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Другой вариант офферов"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                            <ul id="market-offers" class="space-y-2.5 text-sm text-slate-300"></ul>
+                        </div>
+                    </div>
+
+                    <!-- Designer -->
+                    <div id="content-designer" role="tabpanel" class="tab-content hidden grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 flex flex-col justify-between space-y-4 md:col-span-3 shadow-xl">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="px-2.5 py-1 rounded-md bg-pink-500/20 text-pink-200 text-xs font-semibold flex items-center space-x-1 border border-pink-500/30">
+                                        <i data-lucide="image" class="w-3 h-3"></i><span>Промпт для Midjourney / DALL-E</span>
+                                    </span>
+                                    <div class="flex items-center space-x-1.5">
+                                        <button type="button" data-copy="design-prompt" class="text-slate-300 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Копировать промпт"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                        <button type="button" data-regenerate="prompt" class="text-slate-300 hover:text-cyan-300 transition-colors p-1.5 rounded-lg hover:bg-white/5 cursor-pointer" title="Другой промпт"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-950/80 p-4 rounded-xl border border-white/10 font-mono text-xs text-cyan-200 leading-relaxed select-all" id="design-prompt">Промпт появится здесь.</div>
+                            </div>
+                            <div class="pt-3 border-t border-white/10 text-xs text-slate-300" id="design-size">Рекомендуемый размер: 1080x1920 (9:16)</div>
+                        </div>
+
+                        <div class="glass-panel rounded-2xl p-5 sm:p-6 md:col-span-2 shadow-xl">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2.5 py-1 rounded-md bg-purple-500/20 text-purple-200 text-xs font-semibold flex items-center space-x-1 border border-purple-500/30">
+                                    <i data-lucide="palette" class="w-3 h-3"></i><span>Палитра</span>
+                                </span>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-[10px] text-slate-400">Клик — HEX</span>
+                                    <button type="button" id="downloadPaletteBtn" class="text-[11px] text-cyan-300 hover:text-white flex items-center gap-1 cursor-pointer" title="Скачать палитру картинкой">
+                                        <i data-lucide="download" class="w-3 h-3"></i><span>PNG</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="space-y-2.5" id="design-palette"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- History drawer -->
+    <div id="historyDrawer" class="fixed inset-0 z-50 overflow-hidden hidden" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" data-close="historyDrawer"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-[#080b14] border-l border-white/10 p-6 flex flex-col justify-between shadow-2xl">
+                <div class="min-h-0">
+                    <div class="flex items-center justify-between pb-4 border-b border-white/10">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="history" class="w-5 h-5 text-cyan-400"></i>
+                            <h3 id="historyTitle" class="text-lg font-bold text-white">История генераций</h3>
+                        </div>
+                        <button type="button" data-close="historyDrawer" class="text-slate-300 hover:text-white p-1.5 rounded-lg bg-slate-900/60 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div id="historyList" class="mt-4 space-y-3 overflow-y-auto max-h-[calc(100vh-190px)] pr-1"></div>
+                </div>
+                <div class="pt-4 border-t border-white/10 flex justify-between items-center">
+                    <span class="text-xs text-slate-400" id="historyCountLabel">Сохранено: 0</span>
+                    <button type="button" id="clearHistoryBtn" class="text-xs text-red-400 hover:text-red-300 font-medium px-3 py-1.5 rounded-lg bg-red-950/40 border border-red-500/20 cursor-pointer">Очистить историю</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings modal -->
+    <div id="settingsModal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer" data-close="settingsModal"></div>
+        <form id="settingsForm" class="relative w-full max-w-md bg-[#080b14] border border-white/15 rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between">
+                <h3 id="settingsTitle" class="text-lg font-bold text-white flex items-center space-x-2">
+                    <i data-lucide="settings" class="w-5 h-5 text-cyan-400"></i><span>Настройки ИИ</span>
+                </h3>
+                <button type="button" data-close="settingsModal" class="text-slate-300 hover:text-white p-1.5 rounded-lg bg-slate-900/60 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-1.5">
+                <label for="setProvider" class="block text-xs font-medium text-slate-300">Источник генерации</label>
+                <select id="setProvider" class="w-full glass-input rounded-lg px-3 py-2.5 text-sm text-white">
+                    <option value="demo">Демо (умный смысловой анализатор)</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="openai">OpenAI-совместимый API</option>
+                </select>
+            </div>
+            <div id="apiFields" class="space-y-4 hidden">
+                <div class="space-y-1.5">
+                    <label for="setKey" class="block text-xs font-medium text-slate-300">API-ключ</label>
+                    <input id="setKey" type="password" autocomplete="off" placeholder="sk-..." class="w-full glass-input rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500">
+                </div>
+                <div class="space-y-1.5">
+                    <label for="setModel" class="block text-xs font-medium text-slate-300">Модель</label>
+                    <input id="setModel" type="text" class="w-full glass-input rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500">
+                </div>
+                <div id="endpointField" class="space-y-1.5 hidden">
+                    <label for="setEndpoint" class="block text-xs font-medium text-slate-300">Endpoint</label>
+                    <input id="setEndpoint" type="url" class="w-full glass-input rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500">
+                </div>
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button type="button" data-close="settingsModal" class="px-4 py-2.5 rounded-xl bg-slate-900/60 border border-white/10 text-slate-300 text-xs font-semibold hover:text-white cursor-pointer">Отмена</button>
+                <button type="submit" class="px-5 py-2.5 rounded-xl text-slate-950 text-xs font-bold cursor-pointer">Сохранить</button>
+            </div>
+        </form>
+    </div>
+
+    <footer class="w-full border-t border-white/10 py-6 mt-12 text-center text-xs text-slate-400">
+        <p>&copy; 2026 Creator.AI. Для маркетологов, дизайнеров и блогеров.</p>
+    </footer>
+
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-[70] bg-slate-900/95 border border-cyan-400 text-white px-4 py-3 rounded-2xl shadow-neon flex items-center space-x-3 text-sm max-w-sm" role="status" aria-live="polite">
+        <i data-lucide="check-circle-2" class="w-5 h-5 text-cyan-300 shrink-0"></i>
+        <span id="toastMsg"></span>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        'use strict';
+
+        const KEYS = { credits: 'creatorai.credits', day: 'creatorai.day', history: 'creatorai.history', settings: 'creatorai.settings', ui: 'creatorai.ui' };
+        const DAILY_CREDITS = 15;
+        const HISTORY_LIMIT = 30;
+        const ACTIVE = ['border-cyan-400', 'bg-cyan-500/20', 'text-white', 'shadow-neon-subtle'];
+        const INACTIVE = ['border-white/10', 'bg-slate-900/50', 'text-slate-300', 'hover:border-cyan-400/50', 'hover:text-white'];
+
+        const PLATFORMS = {
+            Instagram: { name: 'Instagram Reels', ar: '9:16', size: '1080x1920', times: ['0:00 – 0:03', '0:03 – 0:15', '0:15 – 0:45', '0:45 – 0:55'], link: 'по ссылке в профиле' },
+            TikTok:    { name: 'TikTok',          ar: '9:16', size: '1080x1920', times: ['0:00 – 0:02', '0:02 – 0:10', '0:10 – 0:30', '0:30 – 0:40'], link: 'в профиле' },
+            YouTube:   { name: 'YouTube',         ar: '16:9', size: '1920x1080', times: ['0:00 – 0:25', '0:25 – 1:30', '1:30 – 6:30', '6:30 – 7:30'], link: 'в описании под видео' },
+            Telegram:  { name: 'Telegram',        ar: '1:1',  size: '1080x1080', times: ['0:00 – 0:03', '0:03 – 0:12', '0:12 – 0:35', '0:35 – 0:45'], link: 'в закреплённом сообщении' }
+        };
+
+        const TONES = {
+            'Деловой':      { icon: 'briefcase',   trigger: 'Надёжность', desc: 'Структурно, аргументированно и по делу.' },
+            'Экспертный':   { icon: 'award',       trigger: 'Авторитет',  desc: 'Глубокий разбор причин, критериев и алгоритмов.' },
+            'Убедительный': { icon: 'trending-up', trigger: 'Выгода',     desc: 'Чёткий акцент на ценности, пользе и действии.' },
+            'Дружелюбный':  { icon: 'smile',       trigger: 'Доверие',    desc: 'Тёплая, поддерживающая подача.' },
+            'Лаконичный':   { icon: 'zap',         trigger: 'Ясность',    desc: 'Короткие тезисы, только суть.' }
+        };
+
+        const EXAMPLES = [
+            'Как выучить Python с нуля за 3 месяца без выгорания',
+            'Как победить тревожность и стресс в период дедлайнов',
+            'Запуск IT-стартапа с минимальным бюджетом: пошаговый план',
+            'Почему падает охват в соцсетях и как это исправить в 2026 году',
+            'Секреты эффективного тайм-менеджмента для студентов и разработчиков'
+        ];
+
+        const PROVIDERS = {
+            demo:      { label: 'Демо' },
+            anthropic: { label: 'Anthropic', model: 'claude-3-5-sonnet-latest', endpoint: 'https://api.anthropic.com/v1/messages' },
+            openai:    { label: 'OpenAI-совместимый', model: 'gpt-4o-mini', endpoint: 'https://api.openai.com/v1/chat/completions' }
+        };
+
+        // Расширенная база знаний с точным разделением по категориям
+        const KNOWLEDGE_BASE = [
+            {
+                id: 'education',
+                type: 'Образование, IT и Навыки',
+                audience: 'Студенты, начинающие специалисты, разработчики',
+                visual: 'clean modern workstation with dual monitors, code editor, structured learning notes, soft studio cyan glow',
+                tags: ['#программирование', '#python', '#обучение', '#карьера', '#навыки'],
+                hooks: [
+                    s => `90% новичков совершают фатальную ошибку при изучении темы «${s}» в первые же недели.`,
+                    s => `Как освоить тему «${s}» за короткий срок и не бросить на середине пути.`,
+                    s => `Вся правда о том, сколько времени реально нужно на тему «${s}» без иллюзий и воды.`,
+                    s => `Секрет быстрого старта в теме «${s}», о котором не рассказывают на базовых курсах.`
+                ],
+                problems: [
+                    s => `Главная сложность при освоении темы «${s}» — утонуть в гигабайтах теории, забывая про практику и реальные кейсы.`,
+                    s => `Большинство тратят месяцы на изучение «${s}» в хаотичном порядке, наступая на одни и те же грабли из-за отсутствия структуры.`,
+                    s => `Отсутствие обратной связи и страх сделать ошибку часто останавливают прогресс в теме «${s}».`
+                ],
+                solutions: [
+                    s => `Чёткий алгоритм: 1) изучаете фундамент (20% теории); 2) сразу пишете свой первый мини-проект; 3) разбираете ошибки и масштабируете навык.`,
+                    s => `Практическая система: фокус только на востребованных инструментах, регулярные спринты по 45 минут и код-ревью.`,
+                    s => `Пошаговая стратегия: от простых скриптов к созданию полноценного портфолио за счёт коротких ежедневных задач.`
+                ],
+                ctas: [
+                    () => `Сохраните этот план, чтобы не потерять, и напишите в комментариях, какой язык или навык учите вы.`,
+                    () => `Перешлите этот ролик другу, который давно хотел начать разбираться в программировании.`
+                ],
+                posts: [
+                    `🚀 Хотите освоить тему «%s» без хаоса и пустой траты времени?\n\nВот рабочий план:\n• Сфокусируйтесь на практике с первого дня\n• Разбейте сложную задачу на микро-шаги\n• Создавайте проекты для портфолио\n\nСохраняйте пост и делайте первый шаг уже сегодня!`,
+                    `Разбор: «%s» 💻\n\nПочему классический подход часто не работает? Потому что теория без практики забывается через неделю.\n\nЧто делать:\n1. Минимум теории\n2. Максимум реального кода\n3. Разбор ошибок\n\nДелитесь в комментариях своими успехами!`
+                ],
+                offers: [
+                    `Практический Roadmap для уверенного старта с нуля`,
+                    `Готовые шаблоны и примеры для отработки навыков`,
+                    `Методика быстрого преодоления сложных тем`
+                ],
+                prompts: [
+                    `Modern minimalist workspace for learning programming, glowing code editor on screen, cozy dark room with soft teal and blue ambient lighting, 8k --ar 9:16 --v 6.0`,
+                    `Futuristic developer workspace representing software engineering mastery, sleek monitors, clean aesthetic, cinematic lighting --ar 9:16 --v 6.0`
+                ]
+            },
+            {
+                id: 'social',
+                type: 'Психология, стресс и продуктивность',
+                audience: 'Широкая аудитория, специалисты, студенты',
+                visual: 'calm minimalist aesthetic, soft warm light breaking through dark atmosphere, emotional balance and clarity',
+                tags: ['#психология', '#продуктивность', '#баланс', '#развитие'],
+                hooks: [
+                    s => `Почему вы чувствуете усталость даже после отдыха и как тема «${s}» связана с вашими привычками.`,
+                    s => `Три скрытых триггера, которые приводят к выгоранию в теме «${s}».`,
+                    s => `Как вернуть контроль над ситуацией, когда тема «${s}» начинает забирать всю энергию.`
+                ],
+                problems: [
+                    s => `Хронический стресс и попытка успеть всё сразу незаметно истощают ресурсы, превращая тему «${s}» в источник постоянного давления.`,
+                    s => `Игнорирование первых сигналов усталости приводит к глубокому спаду продуктивности и потере интереса.`
+                ],
+                solutions: [
+                    s => `Рабочая техника восстановления: 1) выявить главный источник напряжения; 2) внедрить правило микро-пауз; 3) пересмотреть приоритеты.`,
+                    s => `Системный подход: защита личных границ, качественный сон и регулярная разгрузка.`
+                ],
+                ctas: [
+                    () => `Поделитесь этим видео с тем, кому сейчас важна поддержка.`,
+                    () => `Сохраните пост, чтобы возвращаться к нему в моменты перегрузки.`
+                ],
+                posts: [
+                    `🌿 Как справляться со стрессом и сохранять ресурс при теме «%s»?\n\nГлавные правила:\n• Уважайте свои личные границы\n• Отдыхайте до того, как устали\n• Фокусируйтесь на главном\n\nБерегите себя и делитесь мыслями в комментариях.`
+                ],
+                offers: [
+                    `Проверенные техники восстановления энергии и фокуса`,
+                    `Четкий алгоритм снижения уровня стресса в рабочих задачах`,
+                    `Практические привычки для поддержания баланса`
+                ],
+                prompts: [
+                    `Calm and peaceful aesthetic workspace, warm cup of tea, soft morning light, cozy atmosphere, mental clarity --ar 9:16 --v 6.0`
+                ]
+            },
+            {
+                id: 'general',
+                type: 'Экспертный разбор и бизнес',
+                audience: 'Предприниматели, маркетологи, авторы контента',
+                visual: 'professional modern business concept, glowing geometric data streams, clean dark glassmorphism aesthetic',
+                tags: ['#бизнес', '#стратегия', '#маркетинг', '#развитие'],
+                hooks: [
+                    s => `Почему классические методы в теме «${s}» больше не работают в текущих реалиях.`,
+                    s => `Разбираем тему «${s}» по полочкам: что приносит результат прямо сейчас.`,
+                    s => `Три грубые ошибки в теме «${s}», которые стоят вам времени и денег.`
+                ],
+                problems: [
+                    s => `Отсутствие четкой стратегии и понимания ключевых метрик при работе с темой «${s}» приводит к сливу бюджета и сил.`,
+                    s => `Устаревшие подходы мешают масштабированию и адаптации к изменениям рынка.`
+                ],
+                solutions: [
+                    s => `Пошаговый план оптимизации: 1) аудит текущих процессов; 2) внедрение гибких инструментов; 3) тестирование гипотез на практике.`,
+                    s => `Стратегический подход: фокус на окупаемость, анализ аудитории и качественный контент.`
+                ],
+                ctas: [
+                    () => `Сохраните этот разбор в избранное и внедрите первый шаг уже сегодня.`,
+                    () => `Напишите в комментариях своё мнение по этому вопросу.`
+                ],
+                posts: [
+                    `💡 Стратегический разбор темы «%s»\n\nЧто нужно учесть для успеха:\n• Четкие цели и метрики\n• Гибкость и скорость внедрения\n• Качественная аналитика\n\nСохраняйте пост и применяйте в работе!`
+                ],
+                offers: [
+                    `Готовый шаблон для быстрой реализации стратегии`,
+                    `Экспертный чек-лист проверки ключевых метрик`,
+                    `Пошаговое руководство по оптимизации процессов`
+                ],
+                prompts: [
+                    `Futuristic business analytics dashboard, glowing holographic charts, dark sleek tech aesthetic, cinematic lighting --ar 9:16 --v 6.0`
+                ]
+            }
+        ];
+
+        const $ = id => document.getElementById(id);
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const icons = () => { if (window.lucide) window.lucide.createIcons(); };
+        const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+        function load(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } }
+        function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+        function el(tag, className, text) {
+            const n = document.createElement(tag);
+            if (className) n.className = className;
+            if (text !== undefined) n.textContent = text;
+            return n;
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+        const ui = load(KEYS.ui, {});
+        const state = {
+            tone: TONES[ui.tone] ? ui.tone : 'Деловой',
+            platform: PLATFORMS[ui.platform] ? ui.platform : 'Instagram',
+            credits: DAILY_CREDITS,
+            history: load(KEYS.history, []),
+            settings: Object.assign({ provider: 'demo', key: '', model: '', endpoint: '' }, load(KEYS.settings, {})),
+            last: null,
+            busy: false,
+            variants: { hook: 0, script: 0, post: 0, offers: 0, prompt: 0 }
+        };
+
+        if (load(KEYS.day, '') === today) {
+            const c = load(KEYS.credits, DAILY_CREDITS);
+            state.credits = Number.isFinite(c) ? c : DAILY_CREDITS;
+        } else {
+            save(KEYS.day, today);
+            save(KEYS.credits, DAILY_CREDITS);
+        }
+        if (!Array.isArray(state.history)) state.history = [];
+
+        let toastTimer;
+        function toast(message, type = 'ok') {
+            const t = $('toast');
+            if (!t) return;
+            $('toastMsg').textContent = message;
+            const err = type === 'error';
+            t.classList.toggle('border-cyan-400', !err);
+            t.classList.toggle('border-red-500', err);
+            t.classList.remove('translate-y-20', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                t.classList.remove('translate-y-0', 'opacity-100');
+                t.classList.add('translate-y-20', 'opacity-0');
+            }, err ? 4500 : 2800);
+        }
+
+        function buildToneButtons() {
+            const box = $('toneGroup');
+            if (!box) return;
+            box.replaceChildren();
+            Object.entries(TONES).forEach(([name, cfg]) => {
+                const b = el('button', 'tone-btn px-3 py-2 rounded-xl text-xs font-medium border transition-all flex items-center space-x-1.5 cursor-pointer');
+                b.type = 'button';
+                b.dataset.tone = name;
+                b.innerHTML = `<i data-lucide="${cfg.icon}" class="w-3.5 h-3.5 text-cyan-400"></i><span>${name}</span>`;
+                box.append(b);
+            });
+        }
+
+        function paintGroup(selector, attr, value) {
+            document.querySelectorAll(selector).forEach(btn => {
+                const on = btn.dataset[attr] === value;
+                btn.classList.remove(...ACTIVE, ...INACTIVE);
+                btn.classList.add(...(on ? ACTIVE : INACTIVE));
+                btn.setAttribute('aria-pressed', String(on));
+            });
+        }
+
+        function setTone(tone) {
+            state.tone = tone;
+            paintGroup('.tone-btn', 'tone', tone);
+            const hint = $('toneHint');
+            if (hint && TONES[tone]) hint.textContent = TONES[tone].desc;
+            save(KEYS.ui, { tone: state.tone, platform: state.platform });
+        }
+
+        function setPlatform(platform) {
+            state.platform = platform;
+            paintGroup('.platform-btn', 'platform', platform);
+            renderPlatformLabels(platform);
+            save(KEYS.ui, { tone: state.tone, platform: state.platform });
+        }
+
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(p => p.classList.add('hidden'));
+            const target = $('content-' + name);
+            if (target) target.classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const on = btn.dataset.tab === name;
+                btn.setAttribute('aria-selected', String(on));
+                btn.classList.toggle('border-cyan-400', on);
+                btn.classList.toggle('text-white', on);
+                btn.classList.toggle('bg-cyan-500/15', on);
+                btn.classList.toggle('border-transparent', !on);
+                btn.classList.toggle('text-slate-300', !on);
+            });
+        }
+
+        function extractKeywords(prompt) {
+            const stop = new Set(['как', 'что', 'для', 'или', 'при', 'без', 'над', 'под', 'про', 'это', 'когда', 'почему', 'зачем', 'через', 'после', 'очень', 'самый']);
+            const words = (prompt.toLowerCase().match(/[a-zа-яё]{4,}/gi) || []).filter(w => !stop.has(w));
+            return [...new Set(words)];
+        }
+
+        // Четкий интеллектуальный классификатор без ложных срабатываний
+        function analyzeTopic(prompt) {
+            const clean = prompt.replace(/\s+/g, ' ').trim();
+            const lower = clean.toLowerCase();
+            const keywords = extractKeywords(clean);
+
+            let category = KNOWLEDGE_BASE[2]; // по умолчанию general
+
+            if (/курс|обучени|урок|программирован|python|javascript|код|разработк|язык|экзамен|егэ|ент|университет|навык|учить|репетитор|марафон|вебинар/i.test(lower)) {
+                category = KNOWLEDGE_BASE[0]; // education
+            } else if (/буллинг|травл|стресс|тревог|выгорани|депресс|одиночеств|устал|психолог|сон|баланс/i.test(lower)) {
+                category = KNOWLEDGE_BASE[1]; // social
+            }
+
+            return {
+                ...category,
+                subject: clean,
+                keywords
+            };
+        }
+
+        function generateContent(prompt, tone, platform, variants = state.variants) {
+            const P = PLATFORMS[platform] || PLATFORMS.Instagram;
+            const T = TONES[tone] || TONES['Деловой'];
+            const topic = analyzeTopic(prompt);
+            const S = topic.subject;
+
+            const pick = (arr, idx) => arr[idx % arr.length];
+
+            const tonePrefix = {
+                'Деловой': '',
+                'Экспертный': 'Экспертный анализ: ',
+                'Убедительный': 'Важно: ',
+                'Дружелюбный': 'Давайте разберем честно: ',
+                'Лаконичный': ''
+            }[tone] || '';
+
+            const hook = tonePrefix + pick(topic.hooks, variants.hook)(S);
+            const problem = pick(topic.problems, variants.script)(S);
+            const solution = pick(topic.solutions, variants.script + 1)(S);
+            const cta = pick(topic.ctas, variants.script)(S);
+
+            const kwTags = topic.keywords.slice(0, 3).map(w => '#' + w);
+            const hashtags = [...new Set([...kwTags, ...topic.tags, '#' + platform.toLowerCase()])].slice(0, 6).join(' ');
+
+            const basePostText = pick(topic.posts, variants.post);
+            const post = basePostText.includes('%s') ? basePostText.replace('%s', S) : `${cap(S)}\n\n${problem}\n\nРешение:\n• ${solution}\n\n${cta} Ссылка — ${P.link}.`;
+
+            const offerSets = [
+                [
+                    `Глубокий разбор темы «${S}» простым языком`,
+                    `Практический пошаговый план для быстрого результата`,
+                    `Проверенные рекомендации с учетом реальных нюансов`
+                ],
+                [
+                    `Как избежать главных ошибок при работе с темой «${S}»`,
+                    `Четкий чек-лист эффективных действий`,
+                    `Готовые инструменты и проверенная методика`
+                ],
+                [
+                    `Экспертная стратегия решения задачи «${S}»`,
+                    `Экономия времени благодаря пошаговому алгоритму`,
+                    `Максимальная польза без лишней теории`
+                ]
+            ];
+            const offers = pick(offerSets, variants.offers);
+
+            const promptVariants = [
+                `${topic.visual}, theme: ${S.slice(0, 70)}, cinematic lighting, editorial quality, 8k --ar ${P.ar} --v 6.0`,
+                `Minimalist conceptual editorial artwork representing "${S.slice(0, 70)}", soft volumetric light, deep slate and glowing teal accents --ar ${P.ar} --v 6.0`,
+                `Modern professional digital art symbolizing "${S.slice(0, 70)}", clean composition, high detail, studio lighting --ar ${P.ar} --v 6.0`
+            ];
+            const designPrompt = pick(promptVariants, variants.prompt);
+
+            const palettes = [
+                [
+                    { name: 'Mint Glow', hex: '#38bda3' },
+                    { name: 'Sky Indigo', hex: '#78a9ff' },
+                    { name: 'Soft Coral', hex: '#f0a6bd' },
+                    { name: 'Midnight', hex: '#0b1020' }
+                ],
+                [
+                    { name: 'Electric Cyan', hex: '#22d3ee' },
+                    { name: 'Deep Violet', hex: '#818cf8' },
+                    { name: 'Amber Warm', hex: '#fbbf24' },
+                    { name: 'Obsidian', hex: '#090d16' }
+                ],
+                [
+                    { name: 'Emerald', hex: '#10b981' },
+                    { name: 'Slate Gray', hex: '#64748b' },
+                    { name: 'Rose Pink', hex: '#f43f5e' },
+                    { name: 'Dark Void', hex: '#030712' }
+                ]
+            ];
+            const palette = pick(palettes, variants.prompt);
+
+            return {
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+                ts: Date.now(),
+                prompt: S,
+                tone,
+                platform,
+                analysis: {
+                    type: topic.type,
+                    audience: topic.audience,
+                    keywords: topic.keywords.slice(0, 4).join(', ')
+                },
+                blogger: { hook, problem, solution, cta, hashtags },
+                marketer: { post, offers },
+                designer: { prompt: designPrompt, size: `${P.size} (${P.ar})`, palette }
+            };
+        }
+
+        function renderPlatformLabels(platform) {
+            const P = PLATFORMS[platform] || PLATFORMS.Instagram;
+            $('hook-label').textContent = `Хук (${P.times[0]})`;
+            $('time-hook').textContent = P.times[0];
+            $('time-1').textContent = P.times[1];
+            $('time-2').textContent = P.times[2];
+            $('time-3').textContent = P.times[3];
+            $('design-size').textContent = `Рекомендуемый размер: ${P.size} (${P.ar})`;
+        }
+
+        function renderAnalysis(a) {
+            const bar = $('analysisBar');
+            if (!bar) return;
+            bar.replaceChildren();
+            const items = a ? [['Категория', a.type], ['Аудитория', a.audience], ['Ключевые слова', a.keywords]].filter(x => x[1]) : [];
+            bar.classList.toggle('hidden', !items.length);
+            if (!items.length) return;
+            bar.append(el('span', 'text-slate-400', 'Смысловой анализ:'));
+            items.forEach(([k, v]) => {
+                const chip = el('span', 'px-2.5 py-1 rounded-lg bg-slate-900/75 border border-white/10 text-slate-200');
+                chip.append(el('span', 'text-cyan-300 font-medium', k + ': '), document.createTextNode(v));
+                bar.append(chip);
+            });
+        }
+
+        function renderPalette(palette) {
+            const box = $('design-palette');
+            if (!box) return;
+            box.replaceChildren();
+            palette.forEach(({ name, hex }) => {
+                const row = el('button', 'w-full flex items-center justify-between bg-slate-900/60 p-2.5 rounded-xl border border-white/10 cursor-pointer hover:border-cyan-400/50 transition-all group text-left');
+                row.type = 'button';
+                row.dataset.hex = hex;
+                const left = el('div', 'flex items-center space-x-3 min-w-0');
+                const sw = el('div', 'w-6 h-6 rounded-lg border border-white/20 shrink-0');
+                sw.style.backgroundColor = hex;
+                left.append(sw, el('span', 'text-xs text-slate-200 truncate', name));
+                row.append(left, el('span', 'text-xs font-mono text-cyan-300 group-hover:underline', hex));
+                box.append(row);
+            });
+        }
+
+        function renderOffers(offers) {
+            const ul = $('market-offers');
+            if (!ul) return;
+            ul.replaceChildren();
+            offers.forEach(o => {
+                const li = el('li', 'flex items-start space-x-2.5 bg-slate-900/50 p-3.5 rounded-xl border border-white/10');
+                li.append(el('span', 'text-cyan-400 font-bold', '•'), el('span', 'leading-relaxed', o));
+                ul.append(li);
+            });
+        }
+
+        function renderResult(d, animate = true) {
+            state.last = d;
+            renderPlatformLabels(d.platform);
+            renderAnalysis(d.analysis);
+
+            $('blog-hook').textContent = d.blogger.hook;
+            $('blog-trigger').textContent = (TONES[d.tone] || {}).trigger || 'Вовлечение';
+            $('blog-body-1').textContent = d.blogger.problem;
+            $('blog-body-2').textContent = d.blogger.solution;
+            $('blog-body-3').textContent = d.blogger.cta;
+            $('blog-hashtags').textContent = d.blogger.hashtags;
+
+            $('market-post').textContent = d.marketer.post;
+            $('post-count').textContent = d.marketer.post.length + ' симв.';
+            renderOffers(d.marketer.offers);
+
+            $('design-prompt').textContent = d.designer.prompt;
+            $('design-size').textContent = `Рекомендуемый размер: ${d.designer.size}`;
+            renderPalette(d.designer.palette);
+
+            document.querySelectorAll('.export-btn, #copyAllBtn').forEach(b => b.disabled = false);
+
+            if (animate) {
+                document.querySelectorAll('.tab-content > div').forEach(n => {
+                    n.classList.remove('fade-up');
+                    void n.offsetWidth;
+                    n.classList.add('fade-up');
+                });
+            }
+            icons();
+        }
+
+        function regenerateBlock(block) {
+            if (!state.last) {
+                toast('Сначала введите тему и нажмите «Сгенерировать»', 'error');
+                return;
+            }
+            state.variants[block] = (state.variants[block] || 0) + 1;
+            const updated = generateContent(state.last.prompt, state.tone, state.platform, state.variants);
+
+            if (block === 'hook') {
+                state.last.blogger.hook = updated.blogger.hook;
+            } else if (block === 'script') {
+                state.last.blogger.problem = updated.blogger.problem;
+                state.last.blogger.solution = updated.blogger.solution;
+                state.last.blogger.cta = updated.blogger.cta;
+            } else if (block === 'post') {
+                state.last.marketer.post = updated.marketer.post;
+            } else if (block === 'offers') {
+                state.last.marketer.offers = updated.marketer.offers;
+            } else if (block === 'prompt') {
+                state.last.designer = updated.designer;
+            }
+
+            if (state.history.length && state.history[0].id === state.last.id) {
+                state.history[0] = { ...state.last };
+                save(KEYS.history, state.history);
+            }
+
+            renderResult(state.last, false);
+            const names = {
+                hook: 'Новый вариант хука',
+                script: 'Новый вариант сценария',
+                post: 'Новый вариант поста',
+                offers: 'Новый вариант тезисов',
+                prompt: 'Новый вариант промпта и палитры'
+            };
+            toast(names[block] || 'Вариант обновлен');
+        }
+
+        function downloadPalettePNG() {
+            const palette = (state.last && state.last.designer && state.last.designer.palette) || [
+                { name: 'Mint Glow', hex: '#38bda3' },
+                { name: 'Sky Indigo', hex: '#78a9ff' },
+                { name: 'Soft Coral', hex: '#f0a6bd' },
+                { name: 'Midnight', hex: '#0b1020' }
+            ];
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 320;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0b1020';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const colW = canvas.width / palette.length;
+            palette.forEach((c, i) => {
+                ctx.fillStyle = c.hex;
+                ctx.fillRect(i * colW + 16, 20, colW - 32, 210);
+                ctx.fillStyle = '#f8fafc';
+                ctx.font = 'bold 16px Inter, sans-serif';
+                ctx.fillText(c.name, i * colW + 20, 260);
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px monospace';
+                ctx.fillText(c.hex.toUpperCase(), i * colW + 20, 285);
+            });
+
+            const a = document.createElement('a');
+            a.href = canvas.toDataURL('image/png');
+            a.download = `CreatorAI_Palette_${Date.now()}.png`;
+            a.click();
+            toast('Палитра скачана в PNG');
+        }
+
+        function renderHistory() {
+            const list = $('historyList');
+            if (!list) return;
+            $('historyBadge').textContent = state.history.length;
+            $('historyCountLabel').textContent = `Сохранено: ${state.history.length}`;
+            list.replaceChildren();
+            if (!state.history.length) {
+                list.append(el('p', 'text-slate-400 text-xs text-center py-8', 'История пока пуста.'));
+                return;
+            }
+            state.history.forEach(item => {
+                const card = el('div', 'p-3.5 rounded-xl bg-slate-900/60 border border-white/10 hover:border-cyan-400/40 cursor-pointer transition-all space-y-1.5 group');
+                card.dataset.id = item.id;
+                const top = el('div', 'flex items-center justify-between text-[10px] text-slate-400 font-mono');
+                top.append(el('span', 'text-cyan-300 font-semibold', `${item.platform} · ${item.tone}`));
+                const right = el('span', 'flex items-center space-x-2');
+                right.append(el('span', '', new Date(item.ts).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })));
+                const del = el('button', 'text-slate-400 hover:text-red-400 p-0.5 cursor-pointer');
+                del.type = 'button';
+                del.dataset.del = item.id;
+                del.title = 'Удалить';
+                del.innerHTML = '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>';
+                right.append(del);
+                top.append(right);
+                card.append(top, el('p', 'text-xs text-slate-200 font-medium line-clamp-2 group-hover:text-cyan-200 transition-colors', item.prompt));
+                list.append(card);
+            });
+            icons();
+        }
+
+        async function copyText(text, okMessage = 'Скопировано в буфер обмена!') {
+            try {
+                if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(text);
+                else throw new Error();
+            } catch {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+            }
+            toast(okMessage);
+        }
+
+        function plainText(d) {
+            const P = PLATFORMS[d.platform] || PLATFORMS.Instagram;
+            return [
+                'CREATOR.AI EXPORT',
+                `Тема: ${d.prompt}`,
+                `Тональность: ${d.tone} | Платформа: ${d.platform}`,
+                '',
+                `ХУК (${P.times[0]}): ${d.blogger.hook}`,
+                `ПРОБЛЕМА (${P.times[1]}): ${d.blogger.problem}`,
+                `РЕШЕНИЕ (${P.times[2]}): ${d.blogger.solution}`,
+                `ПРИЗЫВ (${P.times[3]}): ${d.blogger.cta}`,
+                `ХЭШТЕГИ: ${d.blogger.hashtags}`,
+                '',
+                'ПОСТ ДЛЯ СОЦСЕТЕЙ:',
+                d.marketer.post,
+                '',
+                'ТЕЗИСЫ:',
+                ...d.marketer.offers.map((o, i) => `${i + 1}. ${o}`),
+                '',
+                'ПРОМПТ ДЛЯ ДИЗАЙНА:',
+                d.designer.prompt
+            ].join('\n');
+        }
+
+        function exportResults(format) {
+            if (!state.last) return;
+            const isJson = format === 'json';
+            const blob = new Blob([isJson ? JSON.stringify(state.last, null, 2) : plainText(state.last)], {
+                type: isJson ? 'application/json' : 'text/plain;charset=utf-8'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `CreatorAI_${Date.now()}.${isJson ? 'json' : 'txt'}`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            toast(`Файл скачан (${format.toUpperCase()})`);
+        }
+
+        function toggleOverlay(id, open) {
+            const node = $(id);
+            if (!node) return;
+            node.classList.toggle('hidden', !open);
+            if (id === 'settingsModal') node.classList.toggle('flex', open);
+            document.body.style.overflow = open ? 'hidden' : '';
+            if (open) icons();
+        }
+
+        function syncProviderFields() {
+            const prov = $('setProvider').value;
+            $('apiFields').classList.toggle('hidden', prov === 'demo');
+            $('endpointField').classList.toggle('hidden', prov !== 'openai');
+            if (prov !== 'demo') {
+                $('setModel').placeholder = PROVIDERS[prov].model;
+                $('setEndpoint').placeholder = PROVIDERS.openai.endpoint;
+            }
+        }
+
+        function renderModelLabel() {
+            const s = state.settings;
+            $('modelLabel').textContent = s.provider === 'demo' ? 'Демо' : `${PROVIDERS[s.provider].label}`;
+            $('modeHint').textContent = s.provider === 'demo'
+                ? 'Умный смысловой анализатор контента.'
+                : 'Генерация через подключенный API.';
+        }
+
+        async function handleGenerate(e) {
+            e.preventDefault();
+            if (state.busy) return;
+            const prompt = $('promptInput').value.trim();
+            if (!prompt) {
+                toast('Введите тему или идею', 'error');
+                return;
+            }
+            if (state.credits <= 0) {
+                toast('Кредиты на сегодня закончились', 'error');
+                return;
+            }
+
+            state.busy = true;
+            $('generateBtn').disabled = true;
+            $('btnText').textContent = 'Генерирую…';
+            $('loadingOverlay').classList.remove('hidden');
+
+            try {
+                await sleep(650);
+                state.variants = { hook: 0, script: 0, post: 0, offers: 0, prompt: 0 };
+                const data = generateContent(prompt, state.tone, state.platform, state.variants);
+
+                state.credits -= 1;
+                save(KEYS.credits, state.credits);
+                $('creditsCount').textContent = state.credits;
+
+                state.history.unshift(data);
+                state.history = state.history.slice(0, HISTORY_LIMIT);
+                save(KEYS.history, state.history);
+                renderHistory();
+
+                renderResult(data, true);
+                toast('Контент успешно сгенерирован');
+            } finally {
+                state.busy = false;
+                $('generateBtn').disabled = false;
+                $('btnText').textContent = 'Сгенерировать';
+                $('loadingOverlay').classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('click', e => {
+            const t = e.target;
+
+            const toneBtn = t.closest('[data-tone]');
+            if (toneBtn) {
+                setTone(toneBtn.dataset.tone);
+                if (state.last) {
+                    const updated = generateContent(state.last.prompt, state.tone, state.platform, state.variants);
+                    renderResult(updated, false);
+                }
+                return;
+            }
+
+            const platBtn = t.closest('[data-platform]');
+            if (platBtn) {
+                setPlatform(platBtn.dataset.platform);
+                if (state.last) {
+                    const updated = generateContent(state.last.prompt, state.tone, state.platform, state.variants);
+                    renderResult(updated, false);
+                }
+                return;
+            }
+
+            const tabBtn = t.closest('[data-tab]');
+            if (tabBtn) return switchTab(tabBtn.dataset.tab);
+
+            const regenBtn = t.closest('[data-regenerate]');
+            if (regenBtn) return regenerateBlock(regenBtn.dataset.regenerate);
+
+            const copyBtn = t.closest('[data-copy]');
+            if (copyBtn) {
+                const node = $(copyBtn.dataset.copy);
+                if (node) copyText(node.innerText.trim());
+                return;
+            }
+
+            const hexBtn = t.closest('[data-hex]');
+            if (hexBtn) return copyText(hexBtn.dataset.hex, `Цвет ${hexBtn.dataset.hex} скопирован`);
+
+            const expBtn = t.closest('[data-export]');
+            if (expBtn) return exportResults(expBtn.dataset.export);
+
+            const tmplBtn = t.closest('[data-template]');
+            if (tmplBtn) {
+                const pi = $('promptInput');
+                pi.value = tmplBtn.dataset.template === 'Python с нуля' ? 'Как выучить Python с нуля за 3 месяца без выгорания' :
+                           tmplBtn.dataset.template === 'Борьба со стрессом' ? 'Как победить тревожность и стресс в период дедлайнов' :
+                           tmplBtn.dataset.template === 'Запуск стартапа' ? 'Запуск IT-стартапа с минимальным бюджетом: пошаговый план' :
+                           'Секреты эффективного тайм-менеджмента для студентов';
+                $('charCount').textContent = `${pi.value.length} / 500`;
+                pi.focus();
+                return;
+            }
+
+            const closeBtn = t.closest('[data-close]');
+            if (closeBtn) return toggleOverlay(closeBtn.dataset.close, false);
+
+            const delBtn = t.closest('[data-del]');
+            if (delBtn) {
+                e.stopPropagation();
+                state.history = state.history.filter(h => h.id !== delBtn.dataset.del);
+                save(KEYS.history, state.history);
+                renderHistory();
+                return;
+            }
+
+            const histCard = t.closest('#historyList [data-id]');
+            if (histCard) {
+                const item = state.history.find(h => h.id === histCard.dataset.id);
+                if (item) {
+                    $('promptInput').value = item.prompt;
+                    $('charCount').textContent = `${item.prompt.length} / 500`;
+                    setTone(item.tone);
+                    setPlatform(item.platform);
+                    renderResult(item, true);
+                    toggleOverlay('historyDrawer', false);
+                    toast('Восстановлено из истории');
+                }
+            }
+        });
+
+        $('generatorForm').addEventListener('submit', handleGenerate);
+        $('promptInput').addEventListener('input', e => {
+            $('charCount').textContent = `${e.target.value.length} / 500`;
+        });
+        $('promptInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                $('generatorForm').requestSubmit();
+            }
+        });
+
+        $('exampleBtn').addEventListener('click', () => {
+            const pi = $('promptInput');
+            pi.value = EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)];
+            $('charCount').textContent = `${pi.value.length} / 500`;
+            pi.focus();
+        });
+
+        $('copyAllBtn').addEventListener('click', () => {
+            if (state.last) copyText(plainText(state.last), 'Весь контент скопирован!');
+        });
+
+        $('downloadPaletteBtn').addEventListener('click', downloadPalettePNG);
+        $('historyBtn').addEventListener('click', () => toggleOverlay('historyDrawer', true));
+        $('clearHistoryBtn').addEventListener('click', () => {
+            if (!state.history.length) return;
+            state.history = [];
+            save(KEYS.history, state.history);
+            renderHistory();
+            toast('История очищена');
+        });
+
+        $('settingsBtn').addEventListener('click', () => {
+            $('setProvider').value = state.settings.provider;
+            $('setKey').value = state.settings.key;
+            $('setModel').value = state.settings.model;
+            $('setEndpoint').value = state.settings.endpoint;
+            syncProviderFields();
+            toggleOverlay('settingsModal', true);
+        });
+        $('modelInfo').addEventListener('click', () => $('settingsBtn').click());
+        $('setProvider').addEventListener('change', syncProviderFields);
+        $('settingsForm').addEventListener('submit', e => {
+            e.preventDefault();
+            state.settings = {
+                provider: $('setProvider').value,
+                key: $('setKey').value.trim(),
+                model: $('setModel').value.trim(),
+                endpoint: $('setEndpoint').value.trim()
+            };
+            save(KEYS.settings, state.settings);
+            renderModelLabel();
+            toggleOverlay('settingsModal', false);
+            toast('Настройки сохранены');
+        });
+
+        document.addEventListener('keydown', e => {
+            if (/^[1-3]$/.test(e.key) && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                switchTab(['blogger', 'marketer', 'designer'][Number(e.key) - 1]);
+            }
+            if (e.key === 'Escape') {
+                toggleOverlay('historyDrawer', false);
+                toggleOverlay('settingsModal', false);
+            }
+        });
+
+        buildToneButtons();
+        setTone(state.tone);
+        setPlatform(state.platform);
+        switchTab('blogger');
+        $('creditsCount').textContent = state.credits;
+        renderModelLabel();
+        renderHistory();
+        renderOffers(['Тезисы появятся после анализа темы.', 'Второй аргумент — по сути вашей идеи.', 'Третий тезис — призыв к действию.']);
+        renderPalette([
+            { name: 'Mint Glow', hex: '#38bda3' },
+            { name: 'Sky Indigo', hex: '#78a9ff' },
+            { name: 'Soft Coral', hex: '#f0a6bd' },
+            { name: 'Midnight', hex: '#0b1020' }
+        ]);
+        icons();
+    });
+    </script>
+</body>
+</html>
